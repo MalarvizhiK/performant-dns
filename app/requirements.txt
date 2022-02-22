@@ -1,4 +1,0 @@
-flask
-requests
-Response
-ibm-cos-sdk

@@ -19,6 +19,7 @@ import logging
 from ibm_boto3.session import Session
 from ibm_botocore.client import Config, ClientError
 from pathlib import PurePath
+import json
 
 logger = logging.getLogger()
 
@@ -45,7 +46,7 @@ class CloudObjectStorage:
                 endpoint_url=self.cos_endpoint,
                 config=Config(signature_version='oauth')
             )
-            response = cos.Object(self.cos_bucket, item_name).get()['Body'].read()
+            response = json.loads(cos.Object(self.cos_bucket, item_name).get()['Body'].read())
             return response
         except ClientError as be:
             logger.error("CLIENT ERROR: {0}\n".format(be))

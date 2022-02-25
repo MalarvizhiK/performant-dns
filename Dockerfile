@@ -5,7 +5,7 @@ WORKDIR /application
 RUN mkdir -p /application/work  \
     && python3 -m pip install -r ./requirements.txt
 ENV PYTHONPATH=/application
-EXPOSE 8080
+EXPOSE 5000
 
 ENTRYPOINT [ "python3", "app/start.py" ]
 

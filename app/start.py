@@ -18,6 +18,10 @@
 
 from flask import Flask, request, jsonify, Response
 from cos import CloudObjectStorage 
+import platform
+import subprocess
+import os
+from os import environ
 
 app = Flask(__name__)
 
@@ -36,27 +40,27 @@ def test_con():
 def get_cos_client():
     cos_endpoint = environ.get('COS_ENDPOINT')
     if not cos_endpoint:
-        logger.error('No valid COS endpoint specified')
+        print('No valid COS endpoint specified')
         return None
 
     api_key = environ.get('APIKEY')
     if not api_key:
-        logger.error('No IAM API key found')
+        print('No IAM API key found')
         return None
 
     cos_bucket = environ.get('COS_BUCKET')
     if not cos_bucket:
-        logger.error('Must specify a destination bucket')
+        print('Must specify a destination bucket')
         return None
 
     cos_instance_id = environ.get('COS_INSTANCE_ID')
     if not cos_instance_id:
-        logger.error('No COS instance ID found')
+        print('No COS instance ID found')
         return None
     
     iam_endpoint = environ.get('IAM_ENDPOINT')
     if not iam_endpoint:
-        logger.error('No IAM endpoint specified')
+        print('No IAM endpoint specified')
         return None
 
     try:
@@ -74,6 +78,18 @@ def get_cos_client():
     return cos_client
 
 
+def pingServer(host):
+    parameter = '-n' if platform.system().lower() == 'windows' else '-c'
+    command = ['ping', parameter, '1', host]
+    print(command)
+    #response = subprocess.Popen(command)
+    response = os.system("ping -c 1 " + host)
+    print("PingServer response " , response)
+    if response == 0:
+        return True
+    else:
+        return False
+
 
 @app.route('/result', methods=['GET'])
 def process_results():
@@ -88,9 +104,27 @@ def process_results():
     dns_resolver = request.args.get("resolver_0")
     print("query name ", query_name)
     print("resolver ", dns_resolver) 
-    result = '{"resolver_1": "192.0.0.1"}'
+    result = '{"resolver_1": "161.26.0.7,161.26.0.8"}'
     client=get_cos_client()
-    result=client.get_item(item_name="history.json") 
+    dns_resolvers=client.get_item(item_name="history.json") 
+    print(dns_resolvers) 
+    for item in dns_resolvers:
+        temp_dns_query = item["dns_name"]
+        tmp_resolver_0 = item["resolver_0"]
+        print(tmp_resolver_0)
+        print(temp_dns_query)
+        if temp_dns_query == query_name and dns_resolver == tmp_resolver_0:
+            print(item["resolvers"])
+            resolvers = item["resolvers"]
+            for res in resolvers:
+                print(res)    
+                isResolverReachable = pingServer(res)
+                print(isResolverReachable)
+                if isResolverReachable:
+                    print("server response ", isResolverReachable)
+                    result = '{"resolver": "' + res + '"}'
+                    print("response ", result)
+                    return Response(result, status=200, mimetype='application/json')
     return Response(result, status=200, mimetype='application/json')
 
 
